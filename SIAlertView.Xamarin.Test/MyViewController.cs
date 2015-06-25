@@ -1,6 +1,6 @@
-using MonoTouch.UIKit;
+using UIKit;
 using System;
-using System.Drawing;
+using CoreGraphics;
 
 namespace SIAlert.Xamarin.Test
 {
@@ -36,31 +36,31 @@ namespace SIAlert.Xamarin.Test
             float buttonsTopY = 20f;
             float buttonGap = 10f;
 
-            button1.Frame = new RectangleF(
+            button1.Frame = new CGRect(
                 View.Frame.Width / 2 - buttonWidth / 2,
                 buttonsTopY,
                 buttonWidth,
                 buttonHeight);
 
-            button2.Frame = new RectangleF(
+            button2.Frame = new CGRect(
                 View.Frame.Width / 2 - buttonWidth / 2,
                 button1.Frame.Location.Y + button1.Frame.Height + buttonGap,
                 buttonWidth,
                 buttonHeight);
 
-            button3.Frame = new RectangleF(
+            button3.Frame = new CGRect(
                 View.Frame.Width / 2 - buttonWidth / 2,
                 button2.Frame.Location.Y + button2.Frame.Height + buttonGap,
                 buttonWidth,
                 buttonHeight);
 
-            button4.Frame = new RectangleF(
+            button4.Frame = new CGRect(
                 View.Frame.Width / 2 - buttonWidth / 2,
                 button3.Frame.Location.Y + button3.Frame.Height + buttonGap,
                 buttonWidth,
                 buttonHeight);
 
-            button5.Frame = new RectangleF(
+            button5.Frame = new CGRect(
                 View.Frame.Width / 2 - buttonWidth / 2,
                 button4.Frame.Location.Y + button4.Frame.Height + buttonGap,
                 buttonWidth,

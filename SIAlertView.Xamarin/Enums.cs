@@ -1,4 +1,4 @@
-﻿namespace SIAlert.Xamarin
+namespace SIAlert.Xamarin
 {
     public enum SIAlertViewButtonType
     {

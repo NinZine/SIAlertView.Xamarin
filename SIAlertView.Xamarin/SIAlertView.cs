@@ -1,10 +1,9 @@
-﻿using MonoTouch.CoreAnimation;
-using MonoTouch.CoreGraphics;
-using MonoTouch.Foundation;
-using MonoTouch.UIKit;
+using CoreAnimation;
+using CoreGraphics;
+using Foundation;
+using UIKit;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
 
 namespace SIAlert.Xamarin
@@ -46,6 +45,9 @@ namespace SIAlert.Xamarin
         public int MinimumMessageLineCount { get; set; }
         public int MaximumMessageLineCount { get; set; }
 
+		public bool UseMotionEffects { get; set; }
+		public float MotionEffectExtent { get; set; }
+
         private static Random _Random = new Random();
 
         private static Func<float> GetRandomAngle = () =>
@@ -84,6 +86,8 @@ namespace SIAlert.Xamarin
             ButtonFont = UIFont.SystemFontOfSize(UIFont.ButtonFontSize);
             CornerRadius = 2f;
             ShadowRadius = 8f;
+            MotionEffectExtent = 10.0f;
+			UseMotionEffects = true;
             ContainerWidth = Constants.CONTAINER_WIDTH;
             ButtonHeight = Constants.BUTTON_HEIGHT;
             ButtonMargin = Constants.GAP;
@@ -136,7 +140,7 @@ namespace SIAlert.Xamarin
         public Action<SIAlertView> WillDismissHandler;
         public Action<SIAlertView> DidDismissHandler;
 
-        public void AddButton(string title, SIAlertViewButtonType type, NSAction handler)
+        public void AddButton(string title, SIAlertViewButtonType type, Action handler)
         {
             SIAlertItem item = new SIAlertItem();
             item.Title = title;
@@ -180,6 +184,10 @@ namespace SIAlert.Xamarin
                 alert.DismissAnimated(true, false);
                 return;
             }
+
+			if (UseMotionEffects) {
+				ApplyMotionEffects ();
+			}
 
             if (this.WillShowHandler != null)
             {
@@ -231,6 +239,28 @@ namespace SIAlert.Xamarin
                 }
             });
         }
+
+		private void ApplyMotionEffects()
+		{
+			var horizontalEffect = new UIInterpolatingMotionEffect ("center.x", UIInterpolatingMotionEffectType.TiltAlongHorizontalAxis) 
+			{
+				MinimumRelativeValue = new NSNumber (-MotionEffectExtent),
+				MaximumRelativeValue = new NSNumber (MotionEffectExtent),
+			};
+
+			var verticalEffect = new UIInterpolatingMotionEffect("center.y", UIInterpolatingMotionEffectType.TiltAlongVerticalAxis)
+			{
+				MinimumRelativeValue = new NSNumber(-MotionEffectExtent),
+				MaximumRelativeValue = new NSNumber(MotionEffectExtent),
+			};
+
+			var motionEffectGroup = new UIMotionEffectGroup();
+			{
+				MotionEffects = new [] { horizontalEffect, verticalEffect };
+			}
+
+			AddMotionEffect(motionEffectGroup);
+		}
 
         public override void LayoutSubviews()
         {
@@ -335,21 +365,21 @@ namespace SIAlert.Xamarin
             }
         }
 
-        private void TransitionInCompletion(NSAction action)
+        private void TransitionInCompletion(Action action)
         {
             // convenience Func for float-to-NSNumber conversion
             Func<float, NSNumber> f = (x) => { return NSNumber.FromFloat(x); };
 
-            Func<string, CAMediaTimingFunction> t = (s) => { return CAMediaTimingFunction.FromName(s); };
+			Func<string, CAMediaTimingFunction> t = (s) => { return CAMediaTimingFunction.FromName(new NSString(s)); };
 
             switch (this.TransitionStyle)
             {
                 case SIAlertViewTransitionStyle.SlideFromBottom:
                     {
-                        RectangleF originalRect = this._ContainerView.Frame;
-                        RectangleF rect = originalRect;
-                        float locationY = this.Bounds.Size.Height;
-                        rect = new RectangleF(rect.Location.X, locationY, rect.Size.Width, rect.Size.Height);
+                        CGRect originalRect = this._ContainerView.Frame;
+                        CGRect rect = originalRect;
+                        var locationY = this.Bounds.Size.Height;
+                        rect = new CGRect(rect.Location.X, locationY, rect.Size.Width, rect.Size.Height);
                         this._ContainerView.Frame = rect;
                         UIView.Animate(
                             duration: 0.3f,
@@ -362,10 +392,10 @@ namespace SIAlert.Xamarin
 
                 case SIAlertViewTransitionStyle.SlideFromTop:
                     {
-                        RectangleF rect = this._ContainerView.Frame;
-                        RectangleF originalRect = rect;
-                        float locationY = -rect.Size.Height;
-                        rect = new RectangleF(rect.Location.X, locationY, rect.Size.Width, rect.Size.Height);
+                        CGRect rect = this._ContainerView.Frame;
+                        CGRect originalRect = rect;
+                        nfloat locationY = -rect.Size.Height;
+                        rect = new CGRect(rect.Location.X, locationY, rect.Size.Width, rect.Size.Height);
                         this._ContainerView.Frame = rect;
                         UIView.Animate(
                             duration: 0.3f,
@@ -428,10 +458,10 @@ namespace SIAlert.Xamarin
                 // for now, has the same body as the SlideFromTop case;
                 case SIAlertViewTransitionStyle.DropDown:
                     {
-                        RectangleF rect = this._ContainerView.Frame;
-                        RectangleF originalRect = rect;
-                        float locationY = -rect.Size.Height;
-                        rect = new RectangleF(rect.Location.X, locationY, rect.Size.Width, rect.Size.Height);
+                        CGRect rect = this._ContainerView.Frame;
+                        CGRect originalRect = rect;
+                        nfloat locationY = -rect.Size.Height;
+                        rect = new CGRect(rect.Location.X, locationY, rect.Size.Width, rect.Size.Height);
                         this._ContainerView.Frame = rect;
                         UIView.Animate(
                             duration: 0.3f,
@@ -447,15 +477,15 @@ namespace SIAlert.Xamarin
             }
         }
 
-        public void TransitionOutCompletion(NSAction action)
+        public void TransitionOutCompletion(Action action)
         {
             switch (this.TransitionStyle)
             {
                 case SIAlertViewTransitionStyle.SlideFromBottom:
                     {
-                        RectangleF rect = this._ContainerView.Frame;
+                        CGRect rect = this._ContainerView.Frame;
                         var locationY = this.Bounds.Size.Height;
-                        rect = new RectangleF(rect.Location.X, locationY, rect.Size.Width, rect.Size.Height);
+                        rect = new CGRect(rect.Location.X, locationY, rect.Size.Width, rect.Size.Height);
                         UIView.Animate(
                             duration: 0.3f,
                             delay: 0f,
@@ -467,9 +497,9 @@ namespace SIAlert.Xamarin
 
                 case SIAlertViewTransitionStyle.SlideFromTop:
                     {
-                        RectangleF rect = this._ContainerView.Frame;
+                        CGRect rect = this._ContainerView.Frame;
                         var locationY = -rect.Size.Height;
-                        rect = new RectangleF(rect.Location.X, locationY, rect.Size.Width, rect.Size.Height);
+                        rect = new CGRect(rect.Location.X, locationY, rect.Size.Width, rect.Size.Height);
                         UIView.Animate(
                             duration: 0.3f,
                             delay: 0f,
@@ -507,8 +537,8 @@ namespace SIAlert.Xamarin
 
                 case SIAlertViewTransitionStyle.DropDown:
                     {
-                        PointF point = this._ContainerView.Center;
-                        PointF newPoint = new PointF(point.X, point.Y + this.Bounds.Size.Height);
+                        CGPoint point = this._ContainerView.Center;
+                        CGPoint newPoint = new CGPoint(point.X, point.Y + this.Bounds.Size.Height);
                         UIView.Animate(
                             duration: 0.3f,
                             delay: 0f,
@@ -564,20 +594,20 @@ namespace SIAlert.Xamarin
 
             this._IsLayoutDirty = false;
 
-            float height = this.PreferredHeight;
-            float left = (this.Bounds.Size.Width - ContainerWidth) * 0.5f;
-            float top = (this.Bounds.Size.Height - height) * 0.5f;
+            nfloat height = this.PreferredHeight;
+            nfloat left = (this.Bounds.Size.Width - ContainerWidth) * 0.5f;
+            nfloat top = (this.Bounds.Size.Height - height) * 0.5f;
             this._ContainerView.Transform = CGAffineTransform.MakeIdentity();
-            this._ContainerView.Frame = new RectangleF(left, top, ContainerWidth, height);
+            this._ContainerView.Frame = new CGRect(left, top, ContainerWidth, height);
             this._ContainerView.Layer.ShadowPath = UIBezierPath.FromRoundedRect(this._ContainerView.Bounds, this._ContainerView.Layer.CornerRadius).CGPath;
 
-            float y = ContentMarginTop;
+            nfloat y = ContentMarginTop;
 
             if (this._TitleLabel != null)
             {
                 this._TitleLabel.Text = this.Title;
-                float h = this.HeightForTitleLabel;
-                this._TitleLabel.Frame = new RectangleF(ContentMarginLeft, y, this._ContainerView.Bounds.Size.Width - ContentMarginLeft * 2f, h);
+                nfloat h = this.HeightForTitleLabel;
+                this._TitleLabel.Frame = new CGRect(ContentMarginLeft, y, this._ContainerView.Bounds.Size.Width - ContentMarginLeft * 2f, h);
                 y += h;
             }
 
@@ -588,8 +618,8 @@ namespace SIAlert.Xamarin
                     y += ButtonMargin;
                 }
                 this._MessageLabel.Text = this._Message;
-                float h = this.HeightForMessageLabel;
-                this._MessageLabel.Frame = new RectangleF(ContentMarginLeft, y, this._ContainerView.Bounds.Size.Width - ContentMarginLeft * 2f, h);
+                nfloat h = this.HeightForMessageLabel;
+                this._MessageLabel.Frame = new CGRect(ContentMarginLeft, y, this._ContainerView.Bounds.Size.Width - ContentMarginLeft * 2f, h);
                 y += h;
             }
 
@@ -601,26 +631,26 @@ namespace SIAlert.Xamarin
                 }
                 if (this._Items.Count == 2 && !_AlwaysStackButtons)
                 {
-                    float width = (this._ContainerView.Bounds.Size.Width - ContentMarginLeft * 2f - ButtonMargin) * 0.5f;
+                    nfloat width = (this._ContainerView.Bounds.Size.Width - ContentMarginLeft * 2f - ButtonMargin) * 0.5f;
                     UIButton button = this._Buttons[0];
-                    button.Frame = new RectangleF(ContentMarginLeft, y, width, ButtonHeight);
+                    button.Frame = new CGRect(ContentMarginLeft, y, width, ButtonHeight);
                     button = this._Buttons[1];
-                    button.Frame = new RectangleF(ContentMarginLeft + width + ButtonMargin, y, width, ButtonHeight);
+                    button.Frame = new CGRect(ContentMarginLeft + width + ButtonMargin, y, width, ButtonHeight);
                 }
                 else
                 {
                     int i = 0;
                     foreach (var button in this._Buttons)
                     {
-                        button.Frame = new RectangleF(ContentMarginLeft, y, this._ContainerView.Bounds.Size.Width - ContentMarginLeft * 2f, ButtonHeight);
+                        button.Frame = new CGRect(ContentMarginLeft, y, this._ContainerView.Bounds.Size.Width - ContentMarginLeft * 2f, ButtonHeight);
                         if (this._Buttons.Count > 1)
                         {
                             if (i == this._Buttons.Count - 1 && this._Items[i].Type == SIAlertViewButtonType.Cancel)
                             {
-                                RectangleF rect = button.Frame;
+                                CGRect rect = button.Frame;
                                 var locationY = rect.Location.Y;
                                 locationY += CancelButtonMarginTop;
-                                button.Frame = new RectangleF(rect.Location.X, locationY, rect.Size.Width, rect.Size.Height);
+                                button.Frame = new CGRect(rect.Location.X, locationY, rect.Size.Width, rect.Size.Height);
                             }
                             y += ButtonHeight + ButtonMargin;
                         }
@@ -630,11 +660,11 @@ namespace SIAlert.Xamarin
             }
         }
 
-        public float PreferredHeight
+        public nfloat PreferredHeight
         {
             get
             {
-                float height = ContentMarginTop;
+                nfloat height = ContentMarginTop;
                 if (!string.IsNullOrWhiteSpace(this._Title))
                 {
                     height += this.HeightForTitleLabel;
@@ -671,23 +701,23 @@ namespace SIAlert.Xamarin
             }
         }
 
-        public float HeightForTitleLabel
+        public nfloat HeightForTitleLabel
         {
             get
             {
                 if (_TitleLabel != null)
                 {
-                    float minFontSize;
+                    nfloat minFontSize;
 
-                    float forWidth = ContainerWidth - ContentMarginLeft * 2;
+                    nfloat forWidth = ContainerWidth - ContentMarginLeft * 2;
 
                     if (Int32.Parse(UIDevice.CurrentDevice.SystemVersion.Split('.')[0]) < 6)
                         minFontSize = this._TitleLabel.MinimumFontSize;
                     else
                         minFontSize = this._TitleLabel.Font.PointSize * this._TitleLabel.MinimumScaleFactor;
 
-                    float actualFontSize = this._TitleLabel.Font.PointSize; // this only exsists because the StringSize() method requires it as a ref parameter. We don't actually use the value after the method has been called.
-                    SizeF size = new NSString(_Title).StringSize(this._TitleLabel.Font, minFontSize, ref actualFontSize, forWidth, _TitleLabel.LineBreakMode);
+                    nfloat actualFontSize = this._TitleLabel.Font.PointSize; // this only exsists because the StringSize() method requires it as a ref parameter. We don't actually use the value after the method has been called.
+                    CGSize size = new NSString(_Title).StringSize(this._TitleLabel.Font, minFontSize, ref actualFontSize, forWidth, _TitleLabel.LineBreakMode);
 
                     return size.Height;
                 }
@@ -696,24 +726,24 @@ namespace SIAlert.Xamarin
             }
         }
 
-        public float HeightForMessageLabel
+        public nfloat HeightForMessageLabel
         {
             get
             {
-                float minHeight = MinimumMessageLineCount * this._MessageLabel.Font.LineHeight;
+                nfloat minHeight = MinimumMessageLineCount * this._MessageLabel.Font.LineHeight;
 
                 if (_MessageLabel != null)
                 {
-                    float maxHeight = MaximumMessageLineCount * this._MessageLabel.Font.LineHeight;
+                    nfloat maxHeight = MaximumMessageLineCount * this._MessageLabel.Font.LineHeight;
 
-                    SizeF size =
+                    CGSize size =
                         new NSString(_Message)
                         .StringSize(
                             _MessageLabel.Font,
-                            new SizeF(ContainerWidth - ContentMarginLeft * 2, maxHeight),
+                            new CGSize(ContainerWidth - ContentMarginLeft * 2, maxHeight),
                             _MessageLabel.LineBreakMode);
 
-                    return Math.Max(minHeight, size.Height);
+					return (nfloat)Math.Max(minHeight, size.Height);
                 }
                 return minHeight;
             }
@@ -829,7 +859,7 @@ namespace SIAlert.Xamarin
             _ContainerView = new UIView(this.Bounds);
             _ContainerView.BackgroundColor = ViewBackgroundColor != null ? ViewBackgroundColor : UIColor.White;
             _ContainerView.Layer.CornerRadius = this.CornerRadius;
-            _ContainerView.Layer.ShadowOffset = SizeF.Empty;
+            _ContainerView.Layer.ShadowOffset = CGSize.Empty;
             _ContainerView.Layer.ShadowRadius = this.ShadowRadius;
             _ContainerView.Layer.ShadowOpacity = 0.5f;
             AddSubview(this._ContainerView);
@@ -995,7 +1025,7 @@ namespace SIAlert.Xamarin
         public void ButtonAction(UIButton button)
         {
             SetAnimating(true); // set this flag to YES in order to prevent showing another alert in action block
-            SIAlertItem item = this._Items[button.Tag];
+            SIAlertItem item = this._Items[(int)button.Tag];
             if (item.Action != null)
             {
                 item.Action.Invoke();

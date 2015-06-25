@@ -1,7 +1,6 @@
-﻿using MonoTouch.CoreGraphics;
-using MonoTouch.UIKit;
+using CoreGraphics;
+using UIKit;
 using System;
-using System.Drawing;
 
 namespace SIAlert.Xamarin
 {
@@ -9,7 +8,7 @@ namespace SIAlert.Xamarin
     {
         private SIAlertViewBackgroundStyle _Style;
 
-        public SIAlertBackgroundWindow(SIAlertViewBackgroundStyle backgroundStyle, RectangleF frame) : base(frame)
+        public SIAlertBackgroundWindow(SIAlertViewBackgroundStyle backgroundStyle, CGRect frame) : base(frame)
         {
             _Style = backgroundStyle;
             AutoresizingMask = UIViewAutoresizing.FlexibleWidth | UIViewAutoresizing.FlexibleHeight;
@@ -17,7 +16,7 @@ namespace SIAlert.Xamarin
             WindowLevel = Constants.UIWindowLevelSIAlertBackground;
         }
 
-        public override void Draw(RectangleF rect)
+        public override void Draw(CGRect rect)
         {
             using (CGContext context = UIGraphics.GetCurrentContext())
             {
@@ -25,19 +24,19 @@ namespace SIAlert.Xamarin
                 {
                     case SIAlertViewBackgroundStyle.Gradient:
                         {
-                            float[] locations = { 0.0f, 1.0f };
-                            float[] colors = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.75f };
+                            nfloat[] locations = { 0.0f, 1.0f };
+                            nfloat[] colors = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.75f };
                             CGGradient gradient = new CGGradient(CGColorSpace.CreateDeviceRGB(), colors, locations);
 
-                            PointF center = new PointF(Bounds.Size.Width / 2, Bounds.Size.Height / 2);
-                            float radius = Math.Min(Bounds.Size.Width, Bounds.Size.Height);
+                            CGPoint center = new CGPoint(Bounds.Size.Width / 2, Bounds.Size.Height / 2);
+                            nfloat radius = (nfloat)Math.Min(Bounds.Size.Width, Bounds.Size.Height);
                             context.DrawRadialGradient(gradient, center, 0, center, radius, CGGradientDrawingOptions.DrawsAfterEndLocation);
                             break;
                         }
                     case SIAlertViewBackgroundStyle.Solid:
                         {
                             UIColor.FromWhiteAlpha(0f, 0.5f).SetColor();
-                            context.SetFillColorWithColor(UIColor.FromWhiteAlpha(0f, 0.5f).CGColor);
+                            context.SetFillColor(UIColor.FromWhiteAlpha(0f, 0.5f).CGColor);
                             context.FillRect(Bounds);
                             break;
                         }

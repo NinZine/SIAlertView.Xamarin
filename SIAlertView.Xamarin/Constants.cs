@@ -1,4 +1,4 @@
-﻿internal class Constants
+internal class Constants
 {
     public const string SIAlertViewWillShowNotification = @"SIAlertViewWillShowNotification";
     public const string SIAlertViewDidShowNotification = @"SIAlertViewDidShowNotification";
